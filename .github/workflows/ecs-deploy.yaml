@@ -1,0 +1,58 @@
+name: AWS ECS Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/**'
+  pull_request:
+    branches:
+      - main
+
+
+jobs:
+  
+
+  deploy:
+    # needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      run: |
+        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+
+    - name: Build, tag, and push docker image to Amazon ECR Public
+      run: |
+        docker-compose -f backend/docker-compose.yml build
+        docker ps -a
+        docker tag deauction-backend:latest ${{ secrets.ECR_REPOSITORY }}/deauction-backend:latest
+        docker tag deauction-redis:latest ${{ secrets.ECR_REPOSITORY }}/deauction-redis:latest
+      
+    - name: Push Redis image to ECR
+      run: docker push ${{ secrets.ECR_REPOSITORY }}/deauction-redis:latest
+
+    - name: Push Backend image to ECR
+      run: docker push ${{ secrets.ECR_REPOSITORY }}/deauction-backend:latest
+
+    - name: Update and Redeploy ECS service with new images
+      run: |
+        aws ecs update-service --region us-east-2 --cluster ${{ secrets.ECS_CLUSTER }} --service ${{ secrets.ECS_SERVICE }} --force-new-deployment
+
+        

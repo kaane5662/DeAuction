@@ -1,0 +1,32 @@
+services:
+
+  backend:
+    image: deauction-backend
+    depends_on:
+      - redis
+      - postgres
+    build: 
+      context: ./
+      dockerfile: Dockerfile.prod
+    ports:
+      - 5342:5342
+    
+
+  redis:
+    image: trendverse-redis
+    build: 
+      context: ./ 
+      dockerfile: Dockerfile.redis  
+    ports:
+      - 6379:6379
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      - PGDATA=/var/lib/postgresql/data_new
+    volumes:
+      - ./trendverse_schema.sql:/docker-entrypoint-initdb.d/trendverse_schema.sql
+    
+    
