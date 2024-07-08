@@ -13,7 +13,7 @@ services:
     
 
   redis:
-    image: trendverse-redis
+    image: deauction-redis
     build: 
       context: ./ 
       dockerfile: Dockerfile.redis  
@@ -27,6 +27,6 @@ services:
     environment:
       - PGDATA=/var/lib/postgresql/data_new
     volumes:
-      - ./trendverse_schema.sql:/docker-entrypoint-initdb.d/trendverse_schema.sql
+      - ./trendverse_schema.sql:/docker-entrypoint-initdb.d/migrations-1.sql
     
     
